@@ -3,160 +3,86 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NFT Склад - Zuludka</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            background-color: #0e0e0e;
-            color: #ffffff;
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+        body { font-family: sans-serif; background: #0e0e0e; color: #fff; margin: 0; padding: 20px; text-align: center; }
+        h1 { color: #0088cc; font-size: 20px; margin-bottom: 20px; }
+        
+        .nft-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 80px; }
+        
+        .nft-card { 
+            background: #1c1c1c; border: 1px solid #333; border-radius: 12px; 
+            padding: 15px; cursor: pointer; transition: 0.2s;
+        }
+        
+        .nft-card.selected { border-color: #0088cc; background: #1a2a35; box-shadow: 0 0 10px #0088cc; }
+
+        .btn-add { 
+            position: fixed; bottom: 100px; right: 20px; width: 50px; height: 50px; 
+            border-radius: 50%; background: #333; color: white; border: none; font-size: 24px;
         }
 
-        h1 {
-            font-size: 22px;
-            color: #0088cc;
-            text-transform: uppercase;
-            margin-bottom: 25px;
+        .btn-ready { 
+            position: fixed; bottom: 20px; left: 10%; width: 80%; height: 50px; 
+            background: #0088cc; color: white; border: none; border-radius: 10px; 
+            font-weight: bold; font-size: 16px; display: none; /* Скрыта пока не выберешь */
         }
 
-        .nft-container {
-            width: 100%;
-            max-width: 400px;
+        #modal { 
+            display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+            background: #222; padding: 20px; border-radius: 15px; border: 1px solid #0088cc; width: 80%; 
         }
-
-        .nft-card {
-            background: #1c1c1c;
-            border-radius: 12px;
-            padding: 15px;
-            margin-bottom: 15px;
-            border: 1px solid #333;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .nft-info {
-            text-align: left;
-        }
-
-        .nft-name {
-            font-weight: bold;
-            color: #0088cc;
-        }
-
-        /* Кнопка добавления (+) */
-        .add-button {
-            position: fixed;
-            bottom: 30px;
-            right: 30px;
-            width: 60px;
-            height: 60px;
-            background-color: #0088cc;
-            border-radius: 50%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 35px;
-            color: white;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-            cursor: pointer;
-            border: none;
-            transition: transform 0.2s;
-        }
-
-        .add-button:active {
-            transform: scale(0.9);
-        }
-
-        /* Модальное окно */
-        #modal {
-            display: none;
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: #222;
-            padding: 20px;
-            border-radius: 15px;
-            border: 1px solid #0088cc;
-            width: 85%;
-            z-index: 1000;
-        }
-
-        input {
-            width: 100%;
-            padding: 12px;
-            margin: 15px 0;
-            border-radius: 8px;
-            border: 1px solid #444;
-            background: #111;
-            color: white;
-            box-sizing: border-box;
-        }
-
-        .save-btn {
-            background: #0088cc;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 8px;
-            width: 100%;
-            font-weight: bold;
-        }
+        input { width: 90%; padding: 10px; margin: 10px 0; border-radius: 5px; border: none; }
     </style>
 </head>
 <body>
-
-    <h1>📦 МОЙ СКЛАД NFT</h1>
-
-    <div class="nft-container" id="nft-list">
-        <div class="nft-card">
-            <div class="nft-info">
-                <div class="nft-name">🧦 Fresh Socks #8418</div>
-            </div>
-        </div>
-        <div class="nft-card">
-            <div class="nft-info">
-                <div class="nft-name">🧁 Whip Cupcake #142951</div>
-            </div>
-        </div>
+    <h1>📦 СКЛАД ZULUDKA</h1>
+    
+    <div class="nft-list" id="nft-list">
+        <div class="nft-card" onclick="selectNFT(this, 'FreshSocks')">🧦 Fresh Socks #8418</div>
+        <div class="nft-card" onclick="selectNFT(this, 'WhipCupcake')">🧁 Whip Cupcake #142951</div>
     </div>
 
-    <button class="add-button" onclick="openModal()">+</button>
+    <button class="btn-add" onclick="showModal()">+</button>
+    <button id="ready-btn" class="btn-ready" onclick="sendToBot()">✅ ГОТОВО К ВЫДАЧЕ</button>
 
     <div id="modal">
-        <h3>Добавить новый NFT</h3>
-        <input type="text" id="nft-input" placeholder="Вставь ссылку на NFT">
-        <button class="save-btn" onclick="saveNFT()">СОХРАНИТЬ</button>
-        <button onclick="closeModal()" style="background:none; border:none; color:#888; margin-top:10px; width:100%;">Отмена</button>
+        <h3>Новый NFT</h3>
+        <input type="text" id="nft-link" placeholder="Вставь ссылку">
+        <button onclick="addNFT()" style="background:#0088cc; color:white; border:none; padding:10px; border-radius:5px; width:100%;">ДОБАВИТЬ</button>
+        <button onclick="hideModal()" style="background:none; color:red; border:none; margin-top:10px;">Отмена</button>
     </div>
 
     <script>
         const tg = window.Telegram.WebApp;
         tg.ready();
-        tg.expand();
+        let selectedItem = null;
 
-        function openModal() {
-            document.getElementById('modal').style.display = 'block';
+        function selectNFT(el, name) {
+            // Убираем выделение у всех
+            document.querySelectorAll('.nft-card').forEach(card => card.classList.remove('selected'));
+            // Выделяем текущий
+            el.classList.add('selected');
+            selectedItem = name;
+            // Показываем кнопку "Готово"
+            document.getElementById('ready-btn').style.display = 'block';
         }
 
-        function closeModal() {
-            document.getElementById('modal').style.display = 'none';
+        function sendToBot() {
+            if(selectedItem) {
+                tg.sendData("gift_" + selectedItem);
+                tg.close();
+            }
         }
 
-        function saveNFT() {
-            const link = document.getElementById('nft-input').value;
-            if (link.trim() !== "") {
-                // Отправляем ссылку в бот через механизм WebApp
-                tg.sendData(link); 
-                tg.close(); // Закрываем приложение после отправки
-            } else {
-                alert("Пожалуйста, вставь ссылку!");
+        function showModal() { document.getElementById('modal').style.display = 'block'; }
+        function hideModal() { document.getElementById('modal').style.display = 'none'; }
+
+        function addNFT() {
+            const link = document.getElementById('nft-link').value;
+            if(link) {
+                tg.sendData("add_" + link);
+                tg.close();
             }
         }
     </script>
