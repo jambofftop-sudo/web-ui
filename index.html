@@ -5,52 +5,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body { font-family: -apple-system, sans-serif; background: #0e0e0e; color: #fff; margin: 0; padding: 20px; text-align: center; }
-        h2 { color: #0088cc; font-size: 18px; margin-bottom: 25px; text-transform: uppercase; }
-        
-        .nft-card { background: #1c1c1c; border: 1px solid #333; border-radius: 16px; padding: 20px; margin-bottom: 20px; text-align: left; position: relative; }
-        .nft-name { font-weight: bold; font-size: 15px; color: #0088cc; display: block; margin-bottom: 15px; width: 80%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        
-        /* Иконка удаления */
-        .btn-delete { position: absolute; top: 15px; right: 15px; background: none; border: none; color: #ff4444; font-size: 20px; cursor: pointer; padding: 5px; }
-
-        .status-container { display: flex; flex-direction: column; gap: 8px; }
-        .btn-status { width: 100%; padding: 12px; font-size: 12px; font-weight: bold; border-radius: 10px; border: 1px solid #333; background: #222; color: #555; cursor: pointer; }
-        
-        .active-on { background: #00cc66 !important; color: #000 !important; border-color: #00cc66 !important; }
-        .active-off { background: #ff4444 !important; color: #fff !important; border-color: #ff4444 !important; }
-        
-        .btn-tg { display: block; margin-top: 15px; padding: 12px; background: #333; color: #fff; border-radius: 10px; text-decoration: none; font-size: 12px; text-align: center; font-weight: bold; }
-
-        #modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #1c1c1c; padding: 25px; border-radius: 20px; border: 1px solid #0088cc; width: 80%; z-index: 1000; box-shadow: 0 0 50px rgba(0,0,0,0.9); }
-        input { width: 100%; padding: 14px; margin: 15px 0; border-radius: 10px; border: 1px solid #333; background: #000; color: #fff; box-sizing: border-box; outline: none; }
-        
-        .btn-add-plus { position: fixed; bottom: 25px; right: 25px; width: 65px; height: 65px; border-radius: 50%; background: #0088cc; color: white; border: none; font-size: 35px; box-shadow: 0 4px 20px rgba(0,0,0,0.6); z-index: 99; }
+        body { font-family: -apple-system, sans-serif; background: #0e0e0e; color: #fff; margin: 0; padding: 20px; }
+        h2 { text-align: center; color: #0088cc; font-size: 18px; text-transform: uppercase; }
+        .nft-card { background: #1c1c1c; border: 1px solid #333; border-radius: 16px; padding: 20px; margin-bottom: 20px; position: relative; }
+        .nft-name { font-weight: bold; font-size: 15px; color: #0088cc; display: block; margin-bottom: 15px; }
+        .btn-status { width: 100%; padding: 12px; font-size: 12px; font-weight: bold; border-radius: 10px; border: none; background: #00cc66; color: #000; cursor: pointer; }
+        .btn-tg { display: block; margin-top: 10px; padding: 10px; background: #333; color: #fff; border-radius: 8px; text-decoration: none; text-align: center; font-size: 11px; }
+        .btn-delete { position: absolute; top: 15px; right: 15px; background: none; border: none; color: #ff4444; font-size: 18px; }
+        .btn-add { position: fixed; bottom: 25px; right: 25px; width: 60px; height: 60px; border-radius: 50%; background: #0088cc; color: #fff; border: none; font-size: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
     </style>
 </head>
 <body>
-
     <h2>📦 СКЛАД ZULUDKA</h2>
     <div id="nft-list"></div>
-
-    <button class="btn-add-plus" onclick="showModal()">+</button>
-
-    <div id="modal">
-        <h3 style="margin:0; color:#0088cc;">ДОБАВИТЬ NFT</h3>
-        <input type="text" id="nft-link" placeholder="Вставь t.me/nft/ссылку">
-        <button onclick="addNewNFT()" style="width:100%; padding:14px; background:#0088cc; color:white; border:none; border-radius:10px; font-weight:bold;">СОХРАНИТЬ</button>
-        <button onclick="hideModal()" style="background:none; color:gray; border:none; margin-top:15px; font-size:12px;">ОТМЕНА</button>
-    </div>
+    <button class="btn-add" onclick="addNFT()">+</button>
 
     <script>
         const tg = window.Telegram.WebApp;
         tg.ready();
         tg.expand();
 
-        let nfts = JSON.parse(localStorage.getItem('z_nfts')) || [
-            { id: 1, name: "Fresh Socks #8418", link: "https://t.me/nft/FreshSocks-8418", status: 'on' },
-            { id: 2, name: "Whip Cupcake #142951", link: "https://t.me/nft/WhipCupcake-142951", status: 'on' }
-        ];
+        let nfts = JSON.parse(localStorage.getItem('z_nfts')) || [];
 
         function render() {
             const list = document.getElementById('nft-list');
@@ -59,52 +34,39 @@
                 const card = document.createElement('div');
                 card.className = 'nft-card';
                 card.innerHTML = `
-                    <button class="btn-delete" onclick="deleteNFT(${nft.id})">🗑</button>
+                    <button class="btn-delete" onclick="delNFT(${nft.id})">🗑</button>
                     <span class="nft-name">💎 ${nft.name}</span>
-                    <div class="status-container">
-                        <button class="btn-status ${nft.status === 'on' ? 'active-on' : ''}" onclick="updateStat(${nft.id}, 'on')">АКТИВЕН</button>
-                        <button class="btn-status ${nft.status === 'off' ? 'active-off' : ''}" onclick="updateStat(${nft.id}, 'off')">НЕ АКТИВЕН</button>
-                    </div>
-                    <a href="${nft.link}" class="btn-tg">ОТКРЫТЬ В ТЕЛЕГРАМ</a>
+                    <button class="btn-status" onclick="sendToBot('${nft.link}')">АКТИВИРОВАТЬ В БОТЕ</button>
+                    <a href="${nft.link}" class="btn-tg">ПРОВЕРИТЬ В TG</a>
                 `;
                 list.appendChild(card);
             });
             localStorage.setItem('z_nfts', JSON.stringify(nfts));
         }
 
-        function deleteNFT(id) {
-            const nft = nfts.find(n => n.id === id);
-            if(nft && confirm("Удалить этот NFT из списка?")) {
-                tg.sendData("del_" + nft.link); // Шлем команду боту
-                nfts = nfts.filter(n => n.id !== id);
+        function sendToBot(link) {
+            tg.sendData("add_" + link); // Отправка данных боту [cite: 2026-02-06]
+            tg.close(); // Закрываем веб-апп, чтобы бот обработал данные
+        }
+
+        function addNFT() {
+            const link = prompt("Вставь ссылку t.me/nft/...");
+            if(link && link.includes('t.me/')) {
+                const name = link.split('/').pop().replace('-', ' ');
+                nfts.push({ id: Date.now(), name: name, link: link });
                 render();
             }
         }
 
-        function updateStat(id, status) {
+        function delNFT(id) {
             const nft = nfts.find(n => n.id === id);
             if(nft) {
-                nft.status = status;
-                tg.sendData(status === 'on' ? "add_" + nft.link : "status_off_" + nft.link);
+                tg.sendData("del_" + nft.link);
+                nfts = nfts.filter(n => n.id !== id);
                 render();
+                tg.close();
             }
         }
-
-        function addNewNFT() {
-            const val = document.getElementById('nft-link').value.trim();
-            if(!val.includes('t.me/')) { alert("Нужна ссылка!"); return; }
-            const parts = val.split('/');
-            const name = parts[parts.length - 1].replace('-', ' #');
-            const newObj = { id: Date.now(), name: name, link: val, status: 'on' };
-            nfts.push(newObj);
-            render();
-            tg.sendData("add_" + val);
-            hideModal();
-            document.getElementById('nft-link').value = "";
-        }
-
-        function showModal() { document.getElementById('modal').style.display = 'block'; }
-        function hideModal() { document.getElementById('modal').style.display = 'none'; }
 
         render();
     </script>
