@@ -3,21 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zuludka Sync v3</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body { font-family: -apple-system, sans-serif; background: #0e0e0e; color: #fff; margin: 0; padding: 20px; }
-        h2 { text-align: center; color: #0088cc; font-size: 18px; text-transform: uppercase; }
-        .nft-card { background: #1c1c1c; border: 1px solid #333; border-radius: 16px; padding: 20px; margin-bottom: 20px; position: relative; }
-        .nft-name { font-weight: bold; font-size: 15px; color: #0088cc; display: block; margin-bottom: 15px; }
-        .btn-status { width: 100%; padding: 12px; font-size: 12px; font-weight: bold; border-radius: 10px; border: none; background: #00cc66; color: #000; cursor: pointer; }
-        .btn-tg { display: block; margin-top: 10px; padding: 10px; background: #333; color: #fff; border-radius: 8px; text-decoration: none; text-align: center; font-size: 11px; }
-        .btn-delete { position: absolute; top: 15px; right: 15px; background: none; border: none; color: #ff4444; font-size: 18px; }
-        .btn-add { position: fixed; bottom: 25px; right: 25px; width: 60px; height: 60px; border-radius: 50%; background: #0088cc; color: #fff; border: none; font-size: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+        body { font-family: sans-serif; background: #000; color: #fff; padding: 20px; text-align: center; }
+        .nft-card { background: #111; border: 1px solid #333; border-radius: 12px; padding: 15px; margin-bottom: 15px; text-align: left; }
+        .btn-send { width: 100%; padding: 12px; background: #0088cc; color: #fff; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        .btn-add { position: fixed; bottom: 25px; right: 25px; width: 60px; height: 60px; border-radius: 50%; background: #00cc66; color: #000; font-size: 30px; border: none; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
     </style>
 </head>
 <body>
-    <h2>📦 СКЛАД ZULUDKA</h2>
-    <div id="nft-list"></div>
+    <h3>📦 СИНХРОНИЗАЦИЯ СКЛАДА</h3>
+    <div id="list"></div>
     <button class="btn-add" onclick="addNFT()">+</button>
 
     <script>
@@ -28,44 +25,38 @@
         let nfts = JSON.parse(localStorage.getItem('z_nfts')) || [];
 
         function render() {
-            const list = document.getElementById('nft-list');
-            list.innerHTML = "";
-            nfts.forEach(nft => {
-                const card = document.createElement('div');
-                card.className = 'nft-card';
-                card.innerHTML = `
-                    <button class="btn-delete" onclick="delNFT(${nft.id})">🗑</button>
-                    <span class="nft-name">💎 ${nft.name}</span>
-                    <button class="btn-status" onclick="sendToBot('${nft.link}')">АКТИВИРОВАТЬ В БОТЕ</button>
-                    <a href="${nft.link}" class="btn-tg">ПРОВЕРИТЬ В TG</a>
+            const container = document.getElementById('list');
+            container.innerHTML = "";
+            nfts.forEach((nft, index) => {
+                const div = document.createElement('div');
+                div.className = 'nft-card';
+                div.innerHTML = `
+                    <b style="color:#0088cc">${nft.name}</b><br><br>
+                    <button class="btn-send" onclick="syncBot('${nft.link}')">ОТПРАВИТЬ В БОТА</button>
+                    <button onclick="remove(${index})" style="background:none; border:none; color:gray; font-size:10px; margin-top:10px; width:100%">УДАЛИТЬ ИЗ ТЕЛЕФОНА</button>
                 `;
-                list.appendChild(card);
+                container.appendChild(div);
             });
             localStorage.setItem('z_nfts', JSON.stringify(nfts));
         }
 
-        function sendToBot(link) {
-            tg.sendData("add_" + link); // Отправка данных боту [cite: 2026-02-06]
-            tg.close(); // Закрываем веб-апп, чтобы бот обработал данные
+        function syncBot(link) {
+            // Шлем данные. Работает ТОЛЬКО через Reply-кнопку в боте!
+            tg.sendData("add_" + link);
         }
 
         function addNFT() {
             const link = prompt("Вставь ссылку t.me/nft/...");
             if(link && link.includes('t.me/')) {
                 const name = link.split('/').pop().replace('-', ' ');
-                nfts.push({ id: Date.now(), name: name, link: link });
+                nfts.push({ name: name, link: link });
                 render();
             }
         }
 
-        function delNFT(id) {
-            const nft = nfts.find(n => n.id === id);
-            if(nft) {
-                tg.sendData("del_" + nft.link);
-                nfts = nfts.filter(n => n.id !== id);
-                render();
-                tg.close();
-            }
+        function remove(index) {
+            nfts.splice(index, 1);
+            render();
         }
 
         render();
