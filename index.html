@@ -1,95 +1,41 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <style>
-        body { font-family: -apple-system, sans-serif; background: #0e0e0e; color: #fff; margin: 0; padding: 20px; text-align: center; }
-        h2 { color: #0088cc; font-size: 18px; margin-bottom: 25px; }
-        .nft-card { background: #1c1c1c; border: 1px solid #333; border-radius: 16px; padding: 20px; margin-bottom: 20px; }
-        .nft-name { font-weight: bold; font-size: 14px; display: block; margin-bottom: 15px; overflow: hidden; text-overflow: ellipsis; }
-        .status-container { display: flex; flex-direction: column; gap: 10px; }
-        .btn-status { width: 100%; padding: 12px; font-size: 13px; font-weight: bold; border-radius: 10px; border: 1px solid #333; background: #222; color: #555; cursor: pointer; }
-        .active-on { background: #00cc66 !important; color: #000 !important; border-color: #00cc66 !important; }
-        .active-off { background: #ff4444 !important; color: #fff !important; border-color: #ff4444 !important; }
+<script>
+    // ... (весь CSS и HTML из прошлого сообщения оставляем) ...
+
+    function addNewNFT() {
+        const link = document.getElementById('nft-link').value;
+        if(!link.includes('t.me/')) { alert("Вставь правильную ссылку!"); return; }
         
-        /* Модальное окно */
-        #modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #1c1c1c; padding: 20px; border-radius: 20px; border: 1px solid #0088cc; width: 80%; z-index: 100; }
-        input { width: 100%; padding: 12px; margin: 15px 0; border-radius: 10px; border: 1px solid #333; background: #000; color: #fff; box-sizing: border-box; }
+        // Красивое имя для визуала
+        const name = link.split('/').pop().replace('-', ' ');
         
-        .btn-add-plus { position: fixed; bottom: 25px; right: 25px; width: 60px; height: 60px; border-radius: 50%; background: #0088cc; color: white; border: none; font-size: 30px; }
-    </style>
-</head>
-<body>
-    <h2>📦 УПРАВЛЕНИЕ СКЛАДОМ</h2>
-    <div id="nft-list">
-        <div class="nft-card" id="nft-1">
-            <span class="nft-name">🧦 Fresh Socks #8418</span>
-            <div class="status-container">
-                <button id="s1-on" class="btn-status active-on" onclick="toggleStatus('1', true)">АКТИВЕН</button>
-                <button id="s1-off" class="btn-status" onclick="toggleStatus('1', false)">НЕ АКТИВЕН</button>
-            </div>
-        </div>
-    </div>
+        const newNFT = {
+            id: Date.now(),
+            name: name,
+            link: link,
+            status: 'on'
+        };
+        
+        nfts.push(newNFT);
+        renderNFTs();
+        
+        // ОТПРАВЛЯЕМ БОТУ, ЧТОБЫ ОН СДЕЛАЛ ЕГО НАСТОЯЩИМ
+        tg.sendData("add_" + link); 
+        
+        hideModal();
+        document.getElementById('nft-link').value = "";
+    }
 
-    <button class="btn-add-plus" onclick="showModal()">+</button>
-
-    <div id="modal">
-        <h3>ДОБАВИТЬ NFT</h3>
-        <input type="text" id="nft-link" placeholder="Вставь ссылку на NFT">
-        <button onclick="addNewNFT()" style="width:100%; padding:12px; background:#0088cc; color:white; border:none; border-radius:10px;">ДОБАВИТЬ</button>
-        <button onclick="hideModal()" style="background:none; color:gray; border:none; margin-top:10px;">Отмена</button>
-    </div>
-
-    <script>
-        const tg = window.Telegram.WebApp;
-        tg.ready();
-        tg.expand();
-
-        let nftCount = 1;
-
-        function showModal() { document.getElementById('modal').style.display = 'block'; }
-        function hideModal() { document.getElementById('modal').style.display = 'none'; }
-
-        function toggleStatus(id, isActive) {
-            const onBtn = document.getElementById('s' + id + '-on');
-            const offBtn = document.getElementById('s' + id + '-off');
-            if(isActive) {
-                onBtn.classList.add('active-on');
-                offBtn.classList.remove('active-off');
-                tg.sendData("status_online_" + id);
+    function updateStatus(id, status) {
+        const nft = nfts.find(n => n.id === id);
+        if(nft) {
+            nft.status = status;
+            // Если выключаем - шлем боту ссылку, чтобы он удалил её из рандома
+            if(status === 'off') {
+                tg.sendData("status_off_" + nft.link);
             } else {
-                onBtn.classList.remove('active-on');
-                offBtn.classList.add('active-off');
-                tg.sendData("status_offline_" + id);
+                tg.sendData("add_" + nft.link);
             }
+            renderNFTs();
         }
-
-        function addNewNFT() {
-            const link = document.getElementById('nft-link').value;
-            if(!link.startsWith('http')) { alert("Нужна ссылка!"); return; }
-            
-            nftCount++;
-            const id = nftCount;
-            const list = document.getElementById('nft-list');
-            
-            // Создаем новую карточку в списке [cite: 2026-02-06]
-            const newCard = document.createElement('div');
-            newCard.className = 'nft-card';
-            newCard.innerHTML = `
-                <span class="nft-name">🔗 ${link}</span>
-                <div class="status-container">
-                    <button id="s${id}-on" class="btn-status active-on" onclick="toggleStatus('${id}', true)">АКТИВЕН</button>
-                    <button id="s${id}-off" class="btn-status" onclick="toggleStatus('${id}', false)">НЕ АКТИВЕН</button>
-                </div>
-            `;
-            list.appendChild(newCard);
-            
-            tg.sendData("add_" + link); // Уведомляем бота [cite: 2026-02-06]
-            hideModal();
-            document.getElementById('nft-link').value = "";
-        }
-    </script>
-</body>
-</html>
+    }
+</script>
