@@ -2,73 +2,90 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Управление Складом NFT</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>NFT Admin Panel</title>
     <style>
-        body { font-family: sans-serif; background: #1a1a1a; color: white; text-align: center; padding: 20px; }
-        .container { max-width: 400px; margin: 0 auto; background: #2a2a2a; padding: 20px; border-radius: 15px; box-shadow: 0 0 15px rgba(0,0,0,0.5); }
-        input { width: 90%; padding: 10px; margin: 10px 0; border-radius: 8px; border: none; }
-        button { width: 95%; padding: 12px; margin: 10px 0; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; }
-        .btn-add { background: #28a745; color: white; }
-        .btn-del { background: #dc3545; color: white; }
-        h2 { color: #0088cc; }
+        :root { --bg: #0f1216; --card: #1c2128; --accent: #0088cc; --danger: #eb4034; --success: #24b35d; --text: #f0f6fc; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 15px; display: flex; justify-content: center; }
+        .app { width: 100%; max-width: 400px; }
+        .header { text-align: left; margin-bottom: 20px; }
+        .header h1 { font-size: 22px; margin: 0; color: var(--accent); }
+        .header p { font-size: 13px; color: #8b949e; margin: 5px 0 0; }
+        
+        .card { background: var(--card); border-radius: 16px; padding: 20px; box-shadow: 0 8px 24px rgba(0,0,0,0.3); border: 1px solid #30363d; margin-bottom: 20px; }
+        input { width: 100%; background: #0d1117; border: 1px solid #30363d; border-radius: 10px; padding: 12px; color: white; box-sizing: border-box; margin-bottom: 12px; font-size: 14px; outline: none; transition: 0.2s; }
+        input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(0,136,204,0.2); }
+        
+        button { width: 100%; background: var(--accent); color: white; border: none; padding: 14px; border-radius: 12px; font-size: 15px; font-weight: 600; cursor: pointer; transition: 0.2s; active { transform: scale(0.98); } }
+        
+        .list-title { font-size: 14px; font-weight: 600; color: #8b949e; margin-bottom: 12px; display: flex; justify-content: space-between; }
+        .nft-item { background: #21262d; border-radius: 12px; padding: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; border: 1px solid transparent; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .nft-info b { display: block; font-size: 14px; margin-bottom: 2px; }
+        .nft-info span { font-size: 11px; color: #8b949e; word-break: break-all; }
+        
+        .del-btn { background: rgba(235, 64, 52, 0.1); color: var(--danger); padding: 8px 12px; border-radius: 8px; font-size: 18px; width: auto; font-weight: bold; }
+        .del-btn:hover { background: var(--danger); color: white; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h2>📦 СКЛАД NFT</h2>
-    <p>Добавь приз в базу бота</p>
-    
-    <input type="text" id="nftLink" placeholder="Ссылка на NFT (https://t.me/nft/...)">
-    <input type="text" id="nftName" placeholder="Название приза (Напр: Папаха)">
-    
-    <button class="btn-add" onclick="sendData('add')">✅ ДОБАВИТЬ В РАНДОМ</button>
-    <button class="btn-del" onclick="sendData('delete')">🗑 УДАЛИТЬ ПО ССЫЛКЕ</button>
-    
-    <div id="status" style="margin-top: 15px; font-size: 0.9em; color: #888;"></div>
+<div class="app">
+    <div class="header">
+        <h1>Склад NFT</h1>
+        <p id="counter">Загрузка базы...</p>
+    </div>
+
+    <div class="card">
+        <input type="text" id="nftName" placeholder="Название (например: Папаха)">
+        <input type="text" id="nftLink" placeholder="Ссылка (https://t.me/nft/...)">
+        <button onclick="sendData('add')">Добавить в базу</button>
+    </div>
+
+    <div class="list-title">ТЕКУЩИЙ СПИСОК <span id="count_label">0 items</span></div>
+    <div id="nftList"></div>
 </div>
 
 <script>
-    // Адрес твоего запущенного judge_bot.py
-    // Если бот на том же компе - оставляй localhost
-    const API_URL = 'http://localhost:8080/update';
+    const API = 'http://localhost:8080';
 
-    async function sendData(action) {
-        const link = document.getElementById('nftLink').value;
-        const name = document.getElementById('nftName').value;
-        const statusDiv = document.getElementById('status');
-
-        if (!link) {
-            alert("Вставь ссылку!");
-            return;
-        }
-
-        statusDiv.innerText = "⏳ Отправка...";
-
+    async function load() {
         try {
-            const response = await fetch(API_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: action, link: link, name: name })
-            });
-
-            if (response.ok) {
-                statusDiv.style.color = "#28a745";
-                statusDiv.innerText = action === 'add' ? "✅ Успешно добавлено!" : "🗑 Удалено!";
-                if(action === 'add') {
-                    document.getElementById('nftLink').value = '';
-                    document.getElementById('nftName').value = '';
-                }
-            } else {
-                throw new Error();
-            }
-        } catch (error) {
-            statusDiv.style.color = "#dc3545";
-            statusDiv.innerText = "❌ Ошибка: Бот не запущен или заблокирован";
-            console.error(error);
-        }
+            const r = await fetch(`${API}/get_db`);
+            const data = await r.json();
+            document.getElementById('counter').innerText = "Активных подарков в рандоме";
+            document.getElementById('count_label').innerText = data.length + " шт.";
+            const list = document.getElementById('nftList');
+            list.innerHTML = data.length ? data.map(i => `
+                <div class="nft-item">
+                    <div class="nft-info">
+                        <b>${i.name}</b>
+                        <span>${i.link.substring(0, 35)}...</span>
+                    </div>
+                    <div class="del-btn" onclick="sendData('delete', '${i.link}')">×</div>
+                </div>
+            `).join('') : '<p style="text-align:center; color:#555;">Тут пока пусто</p>';
+        } catch(e) { document.getElementById('counter').innerText = "⚠️ Ошибка связи с ботом"; }
     }
+
+    async function sendData(action, linkOverride = null) {
+        const link = linkOverride || document.getElementById('nftLink').value;
+        const name = document.getElementById('nftName').value || "NFT Item";
+        if (!link) return;
+        try {
+            await fetch(`${API}/update`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({action, link, name})
+            });
+            if (!linkOverride) { document.getElementById('nftLink').value = ''; document.getElementById('nftName').value = ''; }
+            load();
+        } catch(e) { alert("Сервер бота не отвечает"); }
+    }
+
+    load();
+    setInterval(load, 5000); // Авто-обновление каждые 5 сек
 </script>
 
 </body>
