@@ -1,32 +1,75 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Управление Складом NFT</title>
+    <style>
+        body { font-family: sans-serif; background: #1a1a1a; color: white; text-align: center; padding: 20px; }
+        .container { max-width: 400px; margin: 0 auto; background: #2a2a2a; padding: 20px; border-radius: 15px; box-shadow: 0 0 15px rgba(0,0,0,0.5); }
+        input { width: 90%; padding: 10px; margin: 10px 0; border-radius: 8px; border: none; }
+        button { width: 95%; padding: 12px; margin: 10px 0; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; }
+        .btn-add { background: #28a745; color: white; }
+        .btn-del { background: #dc3545; color: white; }
+        h2 { color: #0088cc; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>📦 СКЛАД NFT</h2>
+    <p>Добавь приз в базу бота</p>
+    
+    <input type="text" id="nftLink" placeholder="Ссылка на NFT (https://t.me/nft/...)">
+    <input type="text" id="nftName" placeholder="Название приза (Напр: Папаха)">
+    
+    <button class="btn-add" onclick="sendData('add')">✅ ДОБАВИТЬ В РАНДОМ</button>
+    <button class="btn-del" onclick="sendData('delete')">🗑 УДАЛИТЬ ПО ССЫЛКЕ</button>
+    
+    <div id="status" style="margin-top: 15px; font-size: 0.9em; color: #888;"></div>
+</div>
+
 <script>
-// Адрес твоего запущенного бота
-const BOT_SERVER = 'http://localhost:8080/update';
+    // Адрес твоего запущенного judge_bot.py
+    // Если бот на том же компе - оставляй localhost
+    const API_URL = 'http://localhost:8080/update';
 
-// Эту функцию вызывай при добавлении NFT на сайте
-async function syncAdd(link, name) {
-    try {
-        const response = await fetch(BOT_SERVER, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'add', link: link, name: name })
-        });
-        if (response.ok) console.log("✅ Добавлено в базу бота");
-    } catch (err) {
-        console.error("❌ Бот не в сети или ошибка запроса");
-    }
-}
+    async function sendData(action) {
+        const link = document.getElementById('nftLink').value;
+        const name = document.getElementById('nftName').value;
+        const statusDiv = document.getElementById('status');
 
-// Эту функцию вызывай при удалении NFT на сайте
-async function syncDelete(link) {
-    try {
-        const response = await fetch(BOT_SERVER, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'delete', link: link })
-        });
-        if (response.ok) console.log("🗑 Удалено из базы бота");
-    } catch (err) {
-        console.error("❌ Бот не в сети или ошибка запроса");
+        if (!link) {
+            alert("Вставь ссылку!");
+            return;
+        }
+
+        statusDiv.innerText = "⏳ Отправка...";
+
+        try {
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: action, link: link, name: name })
+            });
+
+            if (response.ok) {
+                statusDiv.style.color = "#28a745";
+                statusDiv.innerText = action === 'add' ? "✅ Успешно добавлено!" : "🗑 Удалено!";
+                if(action === 'add') {
+                    document.getElementById('nftLink').value = '';
+                    document.getElementById('nftName').value = '';
+                }
+            } else {
+                throw new Error();
+            }
+        } catch (error) {
+            statusDiv.style.color = "#dc3545";
+            statusDiv.innerText = "❌ Ошибка: Бот не запущен или заблокирован";
+            console.error(error);
+        }
     }
-}
 </script>
+
+</body>
+</html>
