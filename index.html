@@ -3,93 +3,63 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>УПРАВЛЕНИЕ СКЛАДОМ</title>
+    <title>СКЛАД NFT</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body { font-family: sans-serif; background: #1c1c1c; color: white; text-align: center; padding: 20px; }
-        .card { background: #2a2a2a; border-radius: 15px; padding: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
-        input { width: 80%; padding: 12px; margin: 10px 0; border-radius: 8px; border: none; }
-        button { width: 85%; padding: 12px; background: #0088cc; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
-        button.delete { background: #cc3333; width: auto; padding: 5px 10px; margin-left: 10px; }
-        .nft-item { background: #333; margin: 10px 0; padding: 10px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; }
-        #status { color: #55ff55; margin-bottom: 10px; font-size: 0.9em; }
+        body { font-family: sans-serif; background: #1a1a1a; color: white; text-align: center; padding: 20px; }
+        .card { background: #242424; border-radius: 12px; padding: 20px; border: 1px solid #333; }
+        input { width: 90%; padding: 12px; margin: 8px 0; border-radius: 6px; border: 1px solid #444; background: #111; color: white; }
+        button { width: 95%; padding: 12px; background: #0088cc; color: white; border: none; border-radius: 6px; font-weight: bold; margin-top: 10px; }
+        #status { font-size: 0.8em; margin-bottom: 15px; padding: 5px; border-radius: 4px; }
+        .ok { background: #1b4332; color: #75f9a7; }
+        .err { background: #431b1b; color: #f97575; }
     </style>
 </head>
 <body>
-
     <div class="card">
-        <h2>📦 СКЛАД NFT</h2>
-        <div id="status">Проверка связи с сервером...</div>
+        <h3>📦 СКЛАД NFT</h3>
+        <div id="status" class="err">Синхронизация...</div>
         
-        <input type="text" id="nftLink" placeholder="Вставь ссылку на NFT">
-        <input type="text" id="nftName" placeholder="Название (например, Ковбой)">
-        <button onclick="addNFT()">➕ ДОБАВИТЬ НА СКЛАД</button>
-
-        <hr style="margin: 20px 0; border: 0.5px solid #444;">
-
-        <h3>ТЕКУЩИЙ СПИСОК</h3>
-        <div id="nftList"></div>
+        <input type="text" id="link" placeholder="Ссылка на NFT">
+        <input type="text" id="name" placeholder="Название">
+        <button onclick="send('add')">ДОБАВИТЬ</button>
+        <hr style="border: 0.1px solid #333; margin: 20px 0;">
+        <div id="list"></div>
     </div>
 
     <script>
-        // ТВОЙ АДРЕС СЕРВЕРА (Оставляем http, так как сертификата нет)
-        const API = 'http://45.136.56.194:8080'; 
+        const API = 'http://45.136.56.194:8080';
 
         async function load() {
-            const status = document.getElementById('status');
+            const st = document.getElementById('status');
             try {
                 const r = await fetch(`${API}/get_db`);
-                if (!r.ok) throw new Error();
                 const data = await r.json();
-                status.innerText = "● Бот на сервере запущен";
-                status.style.color = "#55ff55";
+                st.innerText = "● СЕРВЕР ПОДКЛЮЧЕН";
+                st.className = "ok";
                 render(data);
             } catch (e) {
-                status.innerText = "❌ Ошибка: Бот на сервере не отвечает";
-                status.style.color = "#ff5555";
+                st.innerText = "❌ НЕТ СВЯЗИ (Нажми кнопку ниже)";
+                st.className = "err";
+                // Если не удалось подключиться, выводим кнопку-помощник
+                document.getElementById('list').innerHTML = `<button onclick="window.open('${API}/get_db', '_blank')">РАЗРЕШИТЬ ДОСТУП</button>`;
             }
         }
 
+        async function send(action) {
+            const link = document.getElementById('link').value;
+            const name = document.getElementById('name').value;
+            await fetch(`${API}/update`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ action, link, name })
+            });
+            load();
+        }
+
         function render(data) {
-            const list = document.getElementById('nftList');
-            list.innerHTML = '';
-            data.forEach(item => {
-                const div = document.createElement('div');
-                div.className = 'nft-item';
-                div.innerHTML = `
-                    <span>${item.name}</span>
-                    <div>
-                        <button class="delete" onclick="deleteNFT('${item.link}')">🗑️</button>
-                    </div>
-                `;
-                list.appendChild(div);
-            });
-        }
-
-        async function addNFT() {
-            const link = document.getElementById('nftLink').value;
-            const name = document.getElementById('nftName').value;
-            if (!link || !name) return alert("Заполни все поля!");
-
-            await fetch(`${API}/update`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'add', link, name })
-            });
-            
-            document.getElementById('nftLink').value = '';
-            document.getElementById('nftName').value = '';
-            load();
-        }
-
-        async function deleteNFT(link) {
-            if (!confirm("Удалить этот NFT?")) return;
-            await fetch(`${API}/update`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'delete', link })
-            });
-            load();
+            const container = document.getElementById('list');
+            container.innerHTML = data.map(i => `<div style="margin:5px; font-size:0.9em;">${i.name}</div>`).join('');
         }
 
         window.onload = load;
